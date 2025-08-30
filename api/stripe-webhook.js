@@ -32,7 +32,9 @@ export default async function handler(req, res) {
         });
         
         if (!response.ok) {
-          console.error('Supabase update failed:', response.status);
+            const error = await response.text();
+            console.error('Supabase error:', error);
+        }
         }
       }
     }
