@@ -16,7 +16,19 @@ export default async function handler(req, res) {
       console.log('Processing checkout for:', organizerId, 'tier:', tier);
       
       if (organizerId) {
-        const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/organizers?id=eq.${organizerId}`, {
+        const url = `${process.env.SUPABASE_URL}/rest/v1/organizers?id=eq.${organizerId}`;
+        const updateData = {
+          subscription_tier: tier,
+          stripe_customer_id: session.customer,
+          stripe_subscription_id: session.subscription
+        };
+        
+        console.log('Updating URL:', url);
+        console.log('Update data:', JSON.stringify(updateData));
+        console.log('Service key exists:', !!process.env.SUPABASE_SERVICE_KEY);
+        console.log('Service key first 20 chars:', process.env.SUPABASE_SERVICE_KEY?.substring(0, 20));
+        
+        const response = await fetch(url, {
           method: 'PATCH',
           headers: {
             'apikey': process.env.SUPABASE_SERVICE_KEY,
@@ -24,17 +36,15 @@ export default async function handler(req, res) {
             'Content-Type': 'application/json',
             'Prefer': 'return=minimal'
           },
-          body: JSON.stringify({
-            subscription_tier: tier,
-            stripe_customer_id: session.customer,
-            stripe_subscription_id: session.subscription
-          })
+          body: JSON.stringify(updateData)
         });
         
         if (!response.ok) {
-            const error = await response.text();
-            console.error('Supabase error:', error);
-        }
+          const errorText = await response.text();
+          console.error('Supabase update failed:', response.status);
+          console.error('Error details:', errorText);
+        } else {
+          console.log('Successfully updated organizer');
         }
       }
     }
